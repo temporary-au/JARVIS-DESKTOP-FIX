@@ -1,0 +1,87 @@
+name: Rebuild JARVIS executable and complete internal runtime
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - "**/*.py"
+      - "requirements.txt"
+      - "Config/**"
+      - ".github/workflows/build-usb.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows:
+    runs-on: windows-latest
+    timeout-minutes: 120
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+          cache: pip
+
+      - name: Install dependencies including mathematics engine
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install -r requirements.txt
+
+      - name: Verify mathematics and compile source
+        shell: pwsh
+        run: |
+          python -c "import sympy, scipy, numpy; print('SymPy', sympy.__version__); print('SciPy', scipy.__version__); print('NumPy', numpy.__version__)"
+          python -m compileall -q app.py core tests
+          python -m unittest discover -s tests -v
+
+      - name: Build clean Windows onedir application
+        shell: pwsh
+        run: |
+          pyinstaller --noconfirm --clean --onedir --windowed `
+            --name JARVIS `
+            --collect-all PySide6 `
+            --collect-all llama_cpp `
+            --collect-all faster_whisper `
+            --collect-all ctranslate2 `
+            --collect-all sounddevice `
+            --collect-all soundfile `
+            --collect-all piper `
+            --collect-all onnxruntime `
+            --collect-all libzim `
+            --collect-all numpy `
+            --collect-all scipy `
+            --collect-all sympy `
+            app.py
+
+          $exe = "dist/JARVIS/JARVIS.exe"
+          $internal = "dist/JARVIS/_internal"
+          if (-not (Test-Path $exe -PathType Leaf)) { throw "JARVIS.exe was not created." }
+          if (-not (Test-Path $internal -PathType Container)) { throw "PyInstaller _internal folder was not created." }
+
+          $target = "dist/JARVIS_USB_Replacement"
+          New-Item -ItemType Directory -Force -Path $target | Out-Null
+          Copy-Item -Force $exe $target
+          Copy-Item -Recurse -Force $internal $target
+
+          if (-not (Test-Path "$target/JARVIS.exe" -PathType Leaf)) { throw "Replacement JARVIS.exe missing." }
+          if (-not (Test-Path "$target/_internal" -PathType Container)) { throw "Replacement _internal missing." }
+          if (-not (Test-Path "$target/_internal/sympy" -PathType Container)) { throw "SymPy missing from rebuilt runtime." }
+          if (-not (Test-Path "$target/_internal/scipy" -PathType Container)) { throw "SciPy missing from rebuilt runtime." }
+          if (-not (Test-Path "$target/_internal/numpy" -PathType Container)) { throw "NumPy missing from rebuilt runtime." }
+
+          Write-Host "Artifact contains only the executable and complete _internal runtime:"
+          Get-ChildItem $target -Force | Format-Table Name, Mode, Length
+
+      - name: Upload JARVIS.exe and complete _internal folder
+        uses: actions/upload-artifact@v4
+        with:
+          name: JARVIS_EXE_and_INTERNAL_MATHS_4096
+          path: dist/JARVIS_USB_Replacement/
+          if-no-files-found: error
+          retention-days: 14
