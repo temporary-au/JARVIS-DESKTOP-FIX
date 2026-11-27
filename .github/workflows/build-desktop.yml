@@ -1,0 +1,112 @@
+name: Build JARVIS Windows Desktop
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main, master]
+    paths:
+      - '**/*.py'
+      - '**/*.ps1'
+      - '**/README*.txt'
+      - 'requirements.txt'
+      - 'Config/**'
+      - 'Web/**'
+      - 'Plugins/**'
+      - 'AI/**'
+      - 'Assets/**'
+      - 'Tasks/**'
+      - 'Calendar/**'
+      - 'Memory/**'
+      - 'Logs/**'
+      - 'Data/**'
+      - 'Models/**'
+      - 'Voice/**'
+      - 'Knowledge/**'
+      - 'Workflows/**'
+      - '.github/workflows/build-desktop.yml'
+
+permissions:
+  contents: read
+
+jobs:
+  build-windows-desktop:
+    runs-on: windows-latest
+    timeout-minutes: 150
+    steps:
+      - name: Check out source
+        uses: actions/checkout@v4
+
+      - name: Set up Python 3.11
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
+          cache: pip
+
+      - name: Install dependencies
+        shell: pwsh
+        run: |
+          python -m pip install --upgrade pip setuptools wheel
+          python -m pip install --prefer-binary -r requirements.txt
+
+      - name: Verify dependencies and source
+        shell: pwsh
+        run: |
+          python -c "import sympy, scipy, numpy, llama_cpp; print('SymPy', sympy.__version__); print('SciPy', scipy.__version__); print('NumPy', numpy.__version__); print('llama_cpp imported')"
+          python -m compileall -q app.py core tests
+          python -m unittest discover -s tests -v
+
+      - name: Build native Windows desktop application
+        shell: pwsh
+        run: |
+          pyinstaller --noconfirm --clean --onedir --windowed `
+            --name JARVIS `
+            --collect-all PySide6 `
+            --collect-all llama_cpp `
+            --collect-all faster_whisper `
+            --collect-all ctranslate2 `
+            --collect-all sounddevice `
+            --collect-all soundfile `
+            --collect-all piper `
+            --collect-all onnxruntime `
+            --collect-all libzim `
+            --collect-all numpy `
+            --collect-all scipy `
+            --collect-all sympy `
+            --hidden-import=piper `
+            app.py
+
+          $built = 'dist/JARVIS'
+          if (-not (Test-Path "$built/JARVIS.exe" -PathType Leaf)) { throw 'JARVIS.exe was not created.' }
+          if (-not (Test-Path "$built/_internal" -PathType Container)) { throw 'Complete _internal runtime was not created.' }
+
+          $target = 'dist/JARVIS_Desktop'
+          New-Item -ItemType Directory -Force -Path $target | Out-Null
+          Copy-Item "$built/JARVIS.exe" $target -Force
+          Copy-Item "$built/_internal" $target -Recurse -Force
+          foreach ($folder in @('Config','Plugins','Web','Models','Voice','Knowledge','Launcher','AI','Assets','Tasks','Calendar','Memory','Logs','Workflows','Data','JARVIS_USB')) {
+            if (Test-Path $folder) { Copy-Item $folder $target -Recurse -Force }
+          }
+          Copy-Item 'Download-Desktop-Model.ps1' $target -Force
+          Copy-Item 'README-DESKTOP.txt' $target -Force
+
+          if (-not (Test-Path "$target/Config/settings.json")) { throw 'Desktop configuration missing.' }
+          if (-not (Test-Path "$target/Download-Desktop-Model.ps1")) { throw 'Desktop model downloader missing.' }
+          foreach ($folder in @('Models','AI','Assets','Tasks','Calendar','Memory','Logs','Workflows','Data','JARVIS_USB')) { if (-not (Test-Path "$target/$folder" -PathType Container)) { throw "Desktop resource folder missing: $folder" } }
+          foreach ($folder in @('Models','AI','Assets','Tasks','Calendar','Memory','Logs','Workflows','Data')) { if (-not (Test-Path "$folder/README.txt" -PathType Leaf)) { throw "Visible README.txt missing from source folder: $folder" } }
+          if (-not (Test-Path "$target/Plugins/Wikipedia/manifest.json")) { throw 'Wikipedia plugin missing.' }
+          if (-not (Test-Path "$target/Web/JARVIS.html")) { throw 'HTML companion missing.' }
+          if (-not (Test-Path "$target/_internal/sympy")) { throw 'SymPy was not bundled.' }
+          if (-not (Test-Path "$target/_internal/llama_cpp")) { throw 'llama_cpp was not bundled.' }
+          if (-not (Test-Path "$target/Launcher/Start-JARVIS.bat")) { throw 'Desktop launcher missing.' }
+          if (-not (Test-Path "$target/JARVIS_USB/app.py")) { throw 'Nested USB source tree missing.' }
+          if (-not (Test-Path "$target/JARVIS_USB/.github/workflows/build-usb.yml")) { throw 'Nested USB build workflow missing.' }
+          Write-Host 'Desktop package contents:'
+          Get-ChildItem $target -Force | Format-Table Name, Mode
+
+      - name: Upload desktop package
+        uses: actions/upload-artifact@v4
+        with:
+          name: JARVIS_Windows_Desktop
+          path: dist/JARVIS_Desktop/
+          if-no-files-found: error
+          retention-days: 14
