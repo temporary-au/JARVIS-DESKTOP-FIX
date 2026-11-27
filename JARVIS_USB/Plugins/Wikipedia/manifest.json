@@ -1,0 +1,15 @@
+{
+  "id": "wikipedia.offline",
+  "name": "Offline Wikipedia",
+  "version": "1.0.0",
+  "entry_point": "plugin:WikipediaPlugin",
+  "capabilities": [
+    "search",
+    "article",
+    "llm_context"
+  ],
+  "requires": [
+    "libzim"
+  ],
+  "offline": true
+}

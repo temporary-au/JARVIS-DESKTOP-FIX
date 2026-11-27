@@ -1,0 +1,57 @@
+{
+  "edition": "DESKTOP",
+  "portable_mode": false,
+  "wake_word": false,
+  "push_to_talk": {
+    "enabled": true,
+    "key": "RIGHT_CTRL",
+    "hold_to_record": true
+  },
+  "ai": {
+    "provider": "local-gguf",
+    "default_mode": "Balanced",
+    "modes": {
+      "Intelligent": {
+        "model_file": "Meta-Llama-3.1-8B-Instruct-Q4_K_M.gguf",
+        "description": "Maximum practical reasoning"
+      },
+      "Balanced": {
+        "model_file": "gemma-3-4b-it-Q4_K_M.gguf",
+        "description": "Capability and response-speed balance"
+      },
+      "Speed": {
+        "model_file": "smollm2-1.7b-instruct-Q4_K_M.gguf",
+        "description": "Fast lightweight responses"
+      }
+    },
+    "usb_model_is_separate": true
+  },
+  "generation": {
+    "temperature": 0.45,
+    "max_tokens": 512,
+    "repeat_penalty": 1.12,
+    "frequency_penalty": 0.1,
+    "presence_penalty": 0.0
+  },
+  "voice": {
+    "recognition": "faster-whisper-base",
+    "tts": "offline-piper",
+    "piper_model": "Voice/Piper/en_GB-jarvis-high.onnx",
+    "windows_tts_fallback": false
+  },
+  "knowledge": {
+    "wikipedia": "english-nopic",
+    "zim_detection_only": false,
+    "plugin": "wikipedia.offline",
+    "reader": "libzim"
+  },
+  "privacy": {
+    "cloud_inference": false,
+    "always_listening": false
+  },
+  "web_interface": {
+    "enabled": true,
+    "host": "127.0.0.1",
+    "port": 8765
+  }
+}

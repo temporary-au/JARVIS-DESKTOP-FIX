@@ -1,0 +1,43 @@
+{
+  "edition": "USB",
+  "portable_mode": true,
+  "wake_word": false,
+  "push_to_talk": {
+    "enabled": true,
+    "key": "RIGHT_CTRL",
+    "hold_to_record": true
+  },
+  "ai": {
+    "provider": "local-gguf",
+    "api_keys": false,
+    "model_family": "Qwen2.5-1.5B-Instruct"
+  },
+  "generation": {
+    "temperature": 0.7,
+    "max_tokens": 400,
+    "repeat_penalty": 1.15,
+    "frequency_penalty": 0.2,
+    "presence_penalty": 0.0
+  },
+  "voice": {
+    "recognition": "faster-whisper-base",
+    "tts": "offline-piper",
+    "piper_model": "Voice/Piper/en_GB-jarvis-high.onnx",
+    "windows_tts_fallback": false
+  },
+  "knowledge": {
+    "wikipedia": "english-nopic",
+    "zim_detection_only": false,
+    "plugin": "wikipedia.offline",
+    "reader": "libzim"
+  },
+  "privacy": {
+    "cloud_inference": false,
+    "always_listening": false
+  },
+  "web_interface": {
+    "enabled": true,
+    "host": "127.0.0.1",
+    "port": 8765
+  }
+}

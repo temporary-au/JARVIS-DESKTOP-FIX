@@ -1,0 +1,12 @@
+PySide6>=6.8,<7
+psutil>=6.1,<8
+numpy>=1.26,<3
+sounddevice>=0.5,<1
+soundfile>=0.13,<1
+faster-whisper>=1.1,<2
+piper-tts>=1.2,<2
+llama-cpp-python>=0.3.16,<0.4
+pyinstaller>=6.10,<7
+libzim>=3.5,<5
+sympy>=1.13,<2
+scipy>=1.14,<2
